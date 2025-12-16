@@ -78,9 +78,15 @@ export const SettingsScreen: React.FC = () => {
         {
           text: 'Clear',
           style: 'destructive',
-          onPress: () => {
-            // TODO: Implement clear completed tasks
-            console.log('Clear completed tasks');
+          onPress: async () => {
+            try {
+              const { clearCompletedTasks } = await import('../../services/dataManagementService');
+              const count = await clearCompletedTasks(user!.userId);
+              Alert.alert('Success', `Deleted ${count} completed tasks.`);
+            } catch (error) {
+              console.error('Error clearing completed tasks:', error);
+              Alert.alert('Error', 'Failed to clear completed tasks. Please try again.');
+            }
           },
         },
       ]
@@ -96,13 +102,66 @@ export const SettingsScreen: React.FC = () => {
         {
           text: 'Reset',
           style: 'destructive',
-          onPress: () => {
-            // TODO: Implement reset learning patterns
-            console.log('Reset learning patterns');
+          onPress: async () => {
+            try {
+              const { resetUrgencyLearning } = await import('../../services/dataManagementService');
+              const count = await resetUrgencyLearning(user!.userId);
+              Alert.alert('Success', `Reset ${count} urgency patterns.`);
+            } catch (error) {
+              console.error('Error resetting learning:', error);
+              Alert.alert('Error', 'Failed to reset learning patterns. Please try again.');
+            }
           },
         },
       ]
     );
+  };
+
+  const handleClearWellnessHistory = () => {
+    Alert.alert(
+      'Clear Wellness History',
+      'This will permanently delete all wellness check-in history. This action cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Clear',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const { clearWellnessHistory } = await import('../../services/dataManagementService');
+              const count = await clearWellnessHistory(user!.userId);
+              Alert.alert('Success', `Deleted ${count} wellness check-ins.`);
+            } catch (error) {
+              console.error('Error clearing wellness history:', error);
+              Alert.alert('Error', 'Failed to clear wellness history. Please try again.');
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleExportData = async () => {
+    try {
+      const { exportTasksAsJSON, exportWellnessAsJSON } = await import('../../services/dataManagementService');
+      const [tasksData, wellnessData] = await Promise.all([
+        exportTasksAsJSON(user!.userId),
+        exportWellnessAsJSON(user!.userId),
+      ]);
+
+      const exportData = {
+        exportDate: new Date().toISOString(),
+        tasks: JSON.parse(tasksData),
+        wellness: JSON.parse(wellnessData),
+      };
+
+      // In a real app, you would save this to a file or share it
+      console.log('Export data:', JSON.stringify(exportData, null, 2));
+      Alert.alert('Export Ready', 'Your data has been exported. Check the console for now.');
+    } catch (error) {
+      console.error('Error exporting data:', error);
+      Alert.alert('Error', 'Failed to export data. Please try again.');
+    }
   };
 
   const saveHydrationSettings = () => {
@@ -400,11 +459,29 @@ export const SettingsScreen: React.FC = () => {
 
         <Button
           mode="outlined"
+          onPress={handleClearWellnessHistory}
+          style={styles.button}
+          icon="heart-remove"
+        >
+          Clear Wellness History
+        </Button>
+
+        <Button
+          mode="outlined"
           onPress={handleResetLearning}
           style={styles.button}
           icon="refresh"
         >
           Reset Learning Patterns
+        </Button>
+
+        <Button
+          mode="outlined"
+          onPress={handleExportData}
+          style={styles.button}
+          icon="download"
+        >
+          Export My Data
         </Button>
       </View>
 

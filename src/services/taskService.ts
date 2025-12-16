@@ -27,6 +27,17 @@ const taskDocumentToTask = (doc: TaskDocument): Task => {
     completedAt: doc.completedAt?.toDate(),
     createdAt: doc.createdAt.toDate(),
     updatedAt: doc.updatedAt.toDate(),
+    subtasks: doc.subtasks?.map((st) => ({
+      ...st,
+      completedAt: st.completedAt?.toDate(),
+      createdAt: st.createdAt.toDate(),
+    })),
+    recurrenceRule: doc.recurrenceRule
+      ? {
+          ...doc.recurrenceRule,
+          endDate: doc.recurrenceRule.endDate?.toDate(),
+        }
+      : undefined,
   };
 };
 
@@ -46,6 +57,21 @@ const taskToTaskDocument = (task: Partial<Task>): Partial<TaskDocument> => {
 
   if (task.completedAt) {
     doc.completedAt = Timestamp.fromDate(task.completedAt);
+  }
+
+  if (task.subtasks) {
+    doc.subtasks = task.subtasks.map((st) => ({
+      ...st,
+      completedAt: st.completedAt ? Timestamp.fromDate(st.completedAt) : null,
+      createdAt: Timestamp.fromDate(st.createdAt),
+    }));
+  }
+
+  if (task.recurrenceRule) {
+    doc.recurrenceRule = {
+      ...task.recurrenceRule,
+      endDate: task.recurrenceRule.endDate ? Timestamp.fromDate(task.recurrenceRule.endDate) : null,
+    };
   }
 
   return doc;
@@ -139,6 +165,29 @@ export const createTask = async (userId: string, input: CreateTaskInput): Promis
     // Only add reminderTimes if it exists
     if (input.reminderTimes && input.reminderTimes.length > 0) {
       taskData.reminderTimes = input.reminderTimes.map((t) => Timestamp.fromDate(t));
+    }
+
+    // Only add subtasks if they exist
+    if (input.subtasks && input.subtasks.length > 0) {
+      taskData.subtasks = input.subtasks.map((st) => ({
+        ...st,
+        completedAt: st.completedAt ? Timestamp.fromDate(st.completedAt) : null,
+        createdAt: Timestamp.fromDate(st.createdAt),
+      }));
+    }
+
+    // Only add recurrence if it exists
+    if (input.isRecurring && input.recurrenceRule) {
+      taskData.isRecurring = true;
+      taskData.recurrenceRule = {
+        ...input.recurrenceRule,
+        endDate: input.recurrenceRule.endDate ? Timestamp.fromDate(input.recurrenceRule.endDate) : null,
+      };
+    }
+
+    // Only add templateId if it exists
+    if (input.templateId) {
+      taskData.templateId = input.templateId;
     }
 
     const docRef = await addDoc(tasksRef, taskData);

@@ -8,6 +8,24 @@ export type UrgencySource = 'user' | 'suggested' | 'learned';
 
 export type TaskStatus = 'pending' | 'in-progress' | 'completed' | 'archived';
 
+export type RecurrenceFrequency = 'daily' | 'weekly' | 'monthly' | 'custom';
+
+export interface Subtask {
+  subtaskId: string;
+  title: string;
+  completed: boolean;
+  completedAt?: Date;
+  createdAt: Date;
+}
+
+export interface RecurrenceRule {
+  frequency: RecurrenceFrequency;
+  interval: number; // e.g., every 2 days, every 3 weeks
+  daysOfWeek?: number[]; // 0-6 for Sunday-Saturday
+  endDate?: Date;
+  occurrences?: number; // Stop after X occurrences
+}
+
 export interface Task {
   taskId: string;
   userId: string;
@@ -27,6 +45,18 @@ export interface Task {
   tags?: string[];
   isLongTerm?: boolean; // Flag for long-term tasks
 
+  // Subtasks
+  subtasks?: Subtask[];
+
+  // Recurrence
+  isRecurring?: boolean;
+  recurrenceRule?: RecurrenceRule;
+  parentRecurringTaskId?: string; // For instances created from recurring tasks
+
+  // Templates
+  isTemplate?: boolean;
+  templateId?: string; // ID if created from template
+
   // Learning metadata
   estimatedDuration?: number; // in minutes
   actualDuration?: number; // in minutes
@@ -45,6 +75,10 @@ export interface CreateTaskInput {
   reminderTimes?: Date[];
   tags?: string[];
   isLongTerm?: boolean;
+  subtasks?: Subtask[];
+  isRecurring?: boolean;
+  recurrenceRule?: RecurrenceRule;
+  templateId?: string;
 }
 
 export interface UpdateTaskInput {
@@ -59,6 +93,9 @@ export interface UpdateTaskInput {
   tags?: string[];
   actualDuration?: number;
   isLongTerm?: boolean;
+  subtasks?: Subtask[];
+  isRecurring?: boolean;
+  recurrenceRule?: RecurrenceRule;
 }
 
 export interface TaskFilters {
@@ -75,6 +112,22 @@ export interface TaskSortOption {
 }
 
 // Firestore document type (for reading from database)
+export interface SubtaskDocument {
+  subtaskId: string;
+  title: string;
+  completed: boolean;
+  completedAt?: Timestamp;
+  createdAt: Timestamp;
+}
+
+export interface RecurrenceRuleDocument {
+  frequency: RecurrenceFrequency;
+  interval: number;
+  daysOfWeek?: number[];
+  endDate?: Timestamp;
+  occurrences?: number;
+}
+
 export interface TaskDocument {
   taskId: string;
   userId: string;
@@ -93,6 +146,12 @@ export interface TaskDocument {
   updatedAt: Timestamp;
   tags?: string[];
   isLongTerm?: boolean;
+  subtasks?: SubtaskDocument[];
+  isRecurring?: boolean;
+  recurrenceRule?: RecurrenceRuleDocument;
+  parentRecurringTaskId?: string;
+  isTemplate?: boolean;
+  templateId?: string;
   estimatedDuration?: number;
   actualDuration?: number;
   timeToCompletion?: number;

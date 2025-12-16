@@ -168,4 +168,5 @@ export const COLLECTIONS = {
   URGENCY_PATTERNS: 'urgencyPatterns',
   NOTIFICATIONS: 'notifications',
   CONTEXTUAL_EVENTS: 'contextualEvents',
+  WELLNESS_CHECKINS: 'wellnessCheckIns',
 } as const;
