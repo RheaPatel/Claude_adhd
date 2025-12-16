@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, ScrollView, KeyboardAvoidingView, Platform, Alert } from 'react-native';
-import { TextInput, Button, Text, Chip, HelperText, SegmentedButtons, Switch } from 'react-native-paper';
+import { TextInput, Button, Text, Chip, HelperText, SegmentedButtons, Switch, IconButton, Divider } from 'react-native-paper';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { TaskStackParamList, TaskCategory, UrgencyLevel } from '../../types';
+import { TaskCategory, UrgencyLevel, Subtask } from '../../types';
+import { TaskStackParamList } from '../../navigation/types';
 import { useCreateTask } from '../../hooks/useTasks';
 import { categorizeTask } from '../../utils/categorizationUtils';
 import { suggestUrgency } from '../../utils/urgencyCalculator';
@@ -11,6 +12,9 @@ import { formatDate } from '../../utils/dateUtils';
 import { COLORS, SPACING } from '../../constants/theme';
 import { CATEGORY_LABELS, CATEGORY_COLORS } from '../../constants/categories';
 import { URGENCY_LABELS, URGENCY_COLORS, URGENCY_DESCRIPTIONS } from '../../constants/urgencyLevels';
+import { TemplatePickerModal } from '../../components/TemplatePickerModal';
+import { TaskTemplate } from '../../types/template';
+import { SubtaskItem } from '../../components/SubtaskItem';
 
 type Props = {
   navigation: NativeStackNavigationProp<TaskStackParamList, 'AddTask'>;
@@ -27,8 +31,57 @@ export const AddTaskScreen: React.FC<Props> = ({ navigation }) => {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [isLongTerm, setIsLongTerm] = useState(false);
   const [error, setError] = useState('');
+  const [subtasks, setSubtasks] = useState<Subtask[]>([]);
+  const [newSubtaskTitle, setNewSubtaskTitle] = useState('');
+  const [showTemplateModal, setShowTemplateModal] = useState(false);
 
   const { mutate: createTask, isPending } = useCreateTask();
+
+  const handleSelectTemplate = (template: TaskTemplate) => {
+    setTitle(template.name);
+    setDescription(template.description || '');
+    setCategory(template.category);
+    setUrgency(template.urgency);
+
+    // Convert template subtasks to Subtask format
+    if (template.subtasks) {
+      const templateSubtasks: Subtask[] = template.subtasks.map((st, index) => ({
+        subtaskId: `subtask_${Date.now()}_${index}`,
+        title: st.title,
+        completed: false,
+        createdAt: new Date(),
+      }));
+      setSubtasks(templateSubtasks);
+    }
+  };
+
+  const handleAddSubtask = () => {
+    if (!newSubtaskTitle.trim()) return;
+
+    const newSubtask: Subtask = {
+      subtaskId: `subtask_${Date.now()}`,
+      title: newSubtaskTitle.trim(),
+      completed: false,
+      createdAt: new Date(),
+    };
+
+    setSubtasks([...subtasks, newSubtask]);
+    setNewSubtaskTitle('');
+  };
+
+  const handleToggleSubtask = (subtaskId: string) => {
+    setSubtasks(
+      subtasks.map((st) =>
+        st.subtaskId === subtaskId
+          ? { ...st, completed: !st.completed, completedAt: !st.completed ? new Date() : undefined }
+          : st
+      )
+    );
+  };
+
+  const handleDeleteSubtask = (subtaskId: string) => {
+    setSubtasks(subtasks.filter((st) => st.subtaskId !== subtaskId));
+  };
 
   // Auto-categorization when title/description changes
   useEffect(() => {
@@ -66,6 +119,7 @@ export const AddTaskScreen: React.FC<Props> = ({ navigation }) => {
         urgency,
         dueDate,
         isLongTerm,
+        subtasks: subtasks.length > 0 ? subtasks : undefined,
       },
       {
         onSuccess: () => {
@@ -95,6 +149,17 @@ export const AddTaskScreen: React.FC<Props> = ({ navigation }) => {
     >
       <ScrollView style={styles.scrollView} keyboardShouldPersistTaps="handled">
         <View style={styles.content}>
+          {/* Template Button */}
+          <Button
+            mode="outlined"
+            icon="file-document-outline"
+            onPress={() => setShowTemplateModal(true)}
+            style={styles.templateButton}
+            disabled={isPending}
+          >
+            Use Template
+          </Button>
+
           {/* Title Input */}
           <TextInput
             label="Task Title *"
@@ -218,7 +283,54 @@ export const AddTaskScreen: React.FC<Props> = ({ navigation }) => {
             />
           )}
 
+          {/* Subtasks Section */}
+          <Divider style={styles.divider} />
+          <Text variant="labelLarge" style={styles.sectionLabel}>
+            Subtasks (Optional)
+          </Text>
+          <Text variant="bodySmall" style={styles.sectionDescription}>
+            Break down your task into smaller steps
+          </Text>
+
+          {subtasks.length > 0 && (
+            <View style={styles.subtasksList}>
+              {subtasks.map((subtask) => (
+                <SubtaskItem
+                  key={subtask.subtaskId}
+                  subtask={subtask}
+                  onToggle={handleToggleSubtask}
+                  onDelete={handleDeleteSubtask}
+                  disabled={isPending}
+                />
+              ))}
+            </View>
+          )}
+
+          <View style={styles.addSubtaskContainer}>
+            <TextInput
+              label="Add subtask"
+              value={newSubtaskTitle}
+              onChangeText={setNewSubtaskTitle}
+              mode="outlined"
+              style={styles.subtaskInput}
+              disabled={isPending}
+              onSubmitEditing={handleAddSubtask}
+              returnKeyType="done"
+              dense
+              placeholder="e.g., Make shopping list"
+            />
+            <IconButton
+              icon="plus"
+              mode="contained"
+              onPress={handleAddSubtask}
+              disabled={isPending || !newSubtaskTitle.trim()}
+              size={24}
+              iconColor={COLORS.primary}
+            />
+          </View>
+
           {/* Long Term Task Toggle */}
+          <Divider style={styles.divider} />
           <View style={styles.switchContainer}>
             <View style={styles.switchLabel}>
               <Text variant="labelLarge">Long Term Task</Text>
@@ -262,6 +374,13 @@ export const AddTaskScreen: React.FC<Props> = ({ navigation }) => {
           </Button>
         </View>
       </ScrollView>
+
+      {/* Template Picker Modal */}
+      <TemplatePickerModal
+        visible={showTemplateModal}
+        onDismiss={() => setShowTemplateModal(false)}
+        onSelectTemplate={handleSelectTemplate}
+      />
     </KeyboardAvoidingView>
   );
 };
@@ -277,6 +396,9 @@ const styles = StyleSheet.create({
   content: {
     padding: SPACING.lg,
   },
+  templateButton: {
+    marginBottom: SPACING.lg,
+  },
   input: {
     marginBottom: SPACING.md,
   },
@@ -284,6 +406,10 @@ const styles = StyleSheet.create({
     marginTop: SPACING.md,
     marginBottom: SPACING.sm,
     fontWeight: '600',
+  },
+  sectionDescription: {
+    color: COLORS.textSecondary,
+    marginBottom: SPACING.sm,
   },
   chipContainer: {
     flexDirection: 'row',
@@ -314,6 +440,21 @@ const styles = StyleSheet.create({
   switchDescription: {
     color: COLORS.textSecondary,
     marginTop: SPACING.xs,
+  },
+  divider: {
+    marginVertical: SPACING.md,
+  },
+  subtasksList: {
+    marginBottom: SPACING.md,
+  },
+  addSubtaskContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.sm,
+    marginBottom: SPACING.md,
+  },
+  subtaskInput: {
+    flex: 1,
   },
   saveButton: {
     marginTop: SPACING.lg,

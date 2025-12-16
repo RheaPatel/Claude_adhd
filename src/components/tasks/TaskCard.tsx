@@ -199,6 +199,27 @@ export const TaskCard: React.FC<TaskCardProps> = ({
                 </Text>
               )}
 
+              {/* Subtask Progress */}
+              {task.subtasks && task.subtasks.length > 0 && (
+                <View style={styles.subtaskProgress}>
+                  <Icon name="checkbox-multiple-marked-outline" size={14} color={COLORS.textSecondary} />
+                  <Text variant="bodySmall" style={styles.subtaskProgressText}>
+                    {task.subtasks.filter(st => st.completed).length} / {task.subtasks.length} subtasks
+                  </Text>
+                  <View style={styles.progressBarContainer}>
+                    <View
+                      style={[
+                        styles.progressBar,
+                        {
+                          width: `${(task.subtasks.filter(st => st.completed).length / task.subtasks.length) * 100}%`,
+                          backgroundColor: isCompleted ? COLORS.success : urgencyColor,
+                        },
+                      ]}
+                    />
+                  </View>
+                </View>
+              )}
+
               {/* Metadata Row */}
               <View style={styles.metadataRow}>
                 {/* Category Chip */}
@@ -344,6 +365,27 @@ const styles = StyleSheet.create({
   description: {
     color: COLORS.textSecondary,
     marginBottom: SPACING.sm,
+  },
+  subtaskProgress: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.xs,
+    marginBottom: SPACING.sm,
+  },
+  subtaskProgressText: {
+    color: COLORS.textSecondary,
+    fontSize: 12,
+  },
+  progressBarContainer: {
+    flex: 1,
+    height: 4,
+    backgroundColor: COLORS.border,
+    borderRadius: 2,
+    overflow: 'hidden',
+  },
+  progressBar: {
+    height: '100%',
+    borderRadius: 2,
   },
   metadataRow: {
     flexDirection: 'row',
