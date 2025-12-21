@@ -71,6 +71,17 @@ export const SettingsScreen: React.FC = () => {
     settings?.wellnessCheckIns.meals.times[2] || '19:00'
   );
 
+  // Theme state for dialog
+  const [tempTheme, setTempTheme] = useState<'light' | 'dark' | 'auto'>(
+    settings?.theme || 'auto'
+  );
+
+  // Time format validation helper
+  const isValidTimeFormat = (time: string): boolean => {
+    const timeRegex = /^([01]?[0-9]|2[0-3]):[0-5][0-9]$/;
+    return timeRegex.test(time);
+  };
+
   const showSaveConfirmation = (message: string) => {
     setSnackbarMessage(message);
     setSnackbarVisible(true);
@@ -222,6 +233,17 @@ export const SettingsScreen: React.FC = () => {
   };
 
   const saveMealTimes = () => {
+    // Validate time formats
+    if (!isValidTimeFormat(tempBreakfastTime) ||
+        !isValidTimeFormat(tempLunchTime) ||
+        !isValidTimeFormat(tempDinnerTime)) {
+      Alert.alert(
+        'Invalid Time Format',
+        'Please enter times in HH:MM format (e.g., 08:00, 13:30, 19:00)'
+      );
+      return;
+    }
+
     updateWellnessSettings({
       meals: {
         ...settings!.wellnessCheckIns.meals,
@@ -232,10 +254,15 @@ export const SettingsScreen: React.FC = () => {
     showSaveConfirmation('Meal times saved');
   };
 
-  const saveTheme = (theme: 'light' | 'dark' | 'auto') => {
-    updateSettings({ theme });
+  const saveTheme = () => {
+    updateSettings({ theme: tempTheme });
     setShowThemeDialog(false);
     showSaveConfirmation('Theme preference saved');
+  };
+
+  const openThemeDialog = () => {
+    setTempTheme(settings?.theme || 'auto');
+    setShowThemeDialog(true);
   };
 
   const getThemeLabel = (theme?: 'light' | 'dark' | 'auto') => {
@@ -508,7 +535,7 @@ export const SettingsScreen: React.FC = () => {
           title="Theme"
           description={getThemeLabel(settings.theme)}
           left={(props) => <List.Icon {...props} icon="palette" />}
-          onPress={() => setShowThemeDialog(true)}
+          onPress={openThemeDialog}
           right={(props) => <List.Icon {...props} icon="chevron-right" />}
         />
       </View>
@@ -741,8 +768,8 @@ export const SettingsScreen: React.FC = () => {
           <Dialog.Title>Choose Theme</Dialog.Title>
           <Dialog.Content>
             <RadioButton.Group
-              onValueChange={(value) => saveTheme(value as 'light' | 'dark' | 'auto')}
-              value={settings.theme || 'auto'}
+              onValueChange={(value) => setTempTheme(value as 'light' | 'dark' | 'auto')}
+              value={tempTheme}
             >
               <RadioButton.Item label="Light" value="light" />
               <RadioButton.Item label="Dark" value="dark" />
@@ -751,6 +778,7 @@ export const SettingsScreen: React.FC = () => {
           </Dialog.Content>
           <Dialog.Actions>
             <Button onPress={() => setShowThemeDialog(false)}>Cancel</Button>
+            <Button onPress={saveTheme}>Save</Button>
           </Dialog.Actions>
         </Dialog>
 
