@@ -53,11 +53,20 @@ jest.mock('../../../hooks/useSettings', () => ({
         autoCategorizationEnabled: true,
         urgencyLearningEnabled: true,
       },
+      theme: 'auto',
     },
+    updateSettings: jest.fn(),
     updateNotificationPreferences: jest.fn(),
     updateWellnessSettings: jest.fn(),
     updateTaskDefaults: jest.fn(),
   }),
+}));
+
+// Mock expo-constants
+jest.mock('expo-constants', () => ({
+  expoConfig: {
+    version: '1.0.0',
+  },
 }));
 
 // Mock data management service
@@ -292,5 +301,42 @@ describe('SettingsScreen', () => {
       'Are you sure you want to sign out?',
       expect.any(Array)
     );
+  });
+
+  it('should display appearance section with theme option', () => {
+    render(<SettingsScreen />);
+
+    expect(screen.getByText('Appearance')).toBeTruthy();
+    expect(screen.getByText('Theme')).toBeTruthy();
+    expect(screen.getByText('System Default')).toBeTruthy();
+  });
+
+  it('should open theme dialog when theme option is pressed', () => {
+    render(<SettingsScreen />);
+
+    const themeItem = screen.getByText('Theme');
+    fireEvent.press(themeItem);
+
+    expect(screen.getByText('Choose Theme')).toBeTruthy();
+    expect(screen.getByText('Light')).toBeTruthy();
+    expect(screen.getByText('Dark')).toBeTruthy();
+  });
+
+  it('should display about section with app version', () => {
+    render(<SettingsScreen />);
+
+    expect(screen.getByText('About')).toBeTruthy();
+    expect(screen.getByText('App Version')).toBeTruthy();
+    expect(screen.getByText('1.0.0')).toBeTruthy();
+    expect(screen.getByText('ADHD Focus App')).toBeTruthy();
+  });
+
+  it('should open meals dialog with customization options', () => {
+    render(<SettingsScreen />);
+
+    const mealsItem = screen.getByText('Meal Reminders');
+    fireEvent.press(mealsItem);
+
+    expect(screen.getByText('Customize your meal reminder times:')).toBeTruthy();
   });
 });
