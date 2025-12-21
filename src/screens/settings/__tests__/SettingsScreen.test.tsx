@@ -64,8 +64,11 @@ jest.mock('../../../hooks/useSettings', () => ({
 
 // Mock expo-constants
 jest.mock('expo-constants', () => ({
-  expoConfig: {
-    version: '1.0.0',
+  __esModule: true,
+  default: {
+    expoConfig: {
+      version: '1.0.0',
+    },
   },
 }));
 

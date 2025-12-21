@@ -60,15 +60,15 @@ export const SettingsScreen: React.FC = () => {
     settings?.notificationPreferences.quietHoursEnd || '08:00'
   );
 
-  // Meal times state
+  // Meal times state - use optional chaining for safe array access
   const [tempBreakfastTime, setTempBreakfastTime] = useState(
-    settings?.wellnessCheckIns.meals.times[0] || '08:00'
+    settings?.wellnessCheckIns?.meals?.times?.[0] ?? '08:00'
   );
   const [tempLunchTime, setTempLunchTime] = useState(
-    settings?.wellnessCheckIns.meals.times[1] || '13:00'
+    settings?.wellnessCheckIns?.meals?.times?.[1] ?? '13:00'
   );
   const [tempDinnerTime, setTempDinnerTime] = useState(
-    settings?.wellnessCheckIns.meals.times[2] || '19:00'
+    settings?.wellnessCheckIns?.meals?.times?.[2] ?? '19:00'
   );
 
   // Theme state for dialog
@@ -78,9 +78,9 @@ export const SettingsScreen: React.FC = () => {
 
   // Time format validation helper
   // Matches HH:MM format where HH is 00-23 and MM is 00-59
-  // Examples: "08:00", "13:30", "23:59"
+  // Requires two-digit format for hours (e.g., 08:00, not 8:00)
   const isValidTimeFormat = (time: string): boolean => {
-    const TIME_REGEX = /^([01]?[0-9]|2[0-3]):[0-5][0-9]$/;
+    const TIME_REGEX = /^([01][0-9]|2[0-3]):[0-5][0-9]$/;
     return TIME_REGEX.test(time);
   };
 
