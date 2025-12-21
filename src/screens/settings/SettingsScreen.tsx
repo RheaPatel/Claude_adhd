@@ -77,9 +77,11 @@ export const SettingsScreen: React.FC = () => {
   );
 
   // Time format validation helper
+  // Matches HH:MM format where HH is 00-23 and MM is 00-59
+  // Examples: "08:00", "13:30", "23:59"
   const isValidTimeFormat = (time: string): boolean => {
-    const timeRegex = /^([01]?[0-9]|2[0-3]):[0-5][0-9]$/;
-    return timeRegex.test(time);
+    const TIME_REGEX = /^([01]?[0-9]|2[0-3]):[0-5][0-9]$/;
+    return TIME_REGEX.test(time);
   };
 
   const showSaveConfirmation = (message: string) => {
@@ -233,13 +235,22 @@ export const SettingsScreen: React.FC = () => {
   };
 
   const saveMealTimes = () => {
-    // Validate time formats
-    if (!isValidTimeFormat(tempBreakfastTime) ||
-        !isValidTimeFormat(tempLunchTime) ||
-        !isValidTimeFormat(tempDinnerTime)) {
+    // Validate time formats with specific error messages
+    const invalidFields: string[] = [];
+    if (!isValidTimeFormat(tempBreakfastTime)) {
+      invalidFields.push('Breakfast');
+    }
+    if (!isValidTimeFormat(tempLunchTime)) {
+      invalidFields.push('Lunch');
+    }
+    if (!isValidTimeFormat(tempDinnerTime)) {
+      invalidFields.push('Dinner');
+    }
+
+    if (invalidFields.length > 0) {
       Alert.alert(
         'Invalid Time Format',
-        'Please enter times in HH:MM format (e.g., 08:00, 13:30, 19:00)'
+        `Please enter valid times in HH:MM format for: ${invalidFields.join(', ')}\n\nExamples: 08:00, 13:30, 19:00`
       );
       return;
     }
