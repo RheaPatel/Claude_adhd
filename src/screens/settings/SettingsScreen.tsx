@@ -10,7 +10,9 @@ import {
   Dialog,
   Portal,
   RadioButton,
+  Snackbar,
 } from 'react-native-paper';
+import Constants from 'expo-constants';
 import { useAuth } from '../../hooks/useAuth';
 import { useSettings } from '../../hooks/useSettings';
 import { COLORS, SPACING } from '../../constants/theme';
@@ -19,6 +21,7 @@ export const SettingsScreen: React.FC = () => {
   const { user, signOut } = useAuth();
   const {
     settings,
+    updateSettings,
     updateNotificationPreferences,
     updateWellnessSettings,
     updateTaskDefaults,
@@ -29,6 +32,11 @@ export const SettingsScreen: React.FC = () => {
   const [showMealsDialog, setShowMealsDialog] = useState(false);
   const [showBreaksDialog, setShowBreaksDialog] = useState(false);
   const [showQuietHoursDialog, setShowQuietHoursDialog] = useState(false);
+  const [showThemeDialog, setShowThemeDialog] = useState(false);
+
+  // Snackbar state
+  const [snackbarVisible, setSnackbarVisible] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState('');
 
   // Temporary state for dialogs
   const [tempHydrationFreq, setTempHydrationFreq] = useState(
@@ -51,6 +59,35 @@ export const SettingsScreen: React.FC = () => {
   const [tempQuietEnd, setTempQuietEnd] = useState(
     settings?.notificationPreferences.quietHoursEnd || '08:00'
   );
+
+  // Meal times state - use optional chaining for safe array access
+  const [tempBreakfastTime, setTempBreakfastTime] = useState(
+    settings?.wellnessCheckIns?.meals?.times?.[0] ?? '08:00'
+  );
+  const [tempLunchTime, setTempLunchTime] = useState(
+    settings?.wellnessCheckIns?.meals?.times?.[1] ?? '13:00'
+  );
+  const [tempDinnerTime, setTempDinnerTime] = useState(
+    settings?.wellnessCheckIns?.meals?.times?.[2] ?? '19:00'
+  );
+
+  // Theme state for dialog
+  const [tempTheme, setTempTheme] = useState<'light' | 'dark' | 'auto'>(
+    settings?.theme || 'auto'
+  );
+
+  // Time format validation helper
+  // Matches HH:MM format where HH is 00-23 and MM is 00-59
+  // Requires two-digit format for hours (e.g., 08:00, not 8:00)
+  const isValidTimeFormat = (time: string): boolean => {
+    const TIME_REGEX = /^([01][0-9]|2[0-3]):[0-5][0-9]$/;
+    return TIME_REGEX.test(time);
+  };
+
+  const showSaveConfirmation = (message: string) => {
+    setSnackbarMessage(message);
+    setSnackbarVisible(true);
+  };
 
   const handleSignOut = async () => {
     Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
@@ -174,6 +211,7 @@ export const SettingsScreen: React.FC = () => {
       },
     });
     setShowHydrationDialog(false);
+    showSaveConfirmation('Hydration settings saved');
   };
 
   const saveBreakSettings = () => {
@@ -184,6 +222,7 @@ export const SettingsScreen: React.FC = () => {
       },
     });
     setShowBreaksDialog(false);
+    showSaveConfirmation('Break settings saved');
   };
 
   const saveQuietHours = () => {
@@ -192,6 +231,61 @@ export const SettingsScreen: React.FC = () => {
       quietHoursEnd: tempQuietEnd,
     });
     setShowQuietHoursDialog(false);
+    showSaveConfirmation('Quiet hours saved');
+  };
+
+  const saveMealTimes = () => {
+    // Validate time formats with specific error messages
+    const invalidFields: string[] = [];
+    if (!isValidTimeFormat(tempBreakfastTime)) {
+      invalidFields.push('Breakfast');
+    }
+    if (!isValidTimeFormat(tempLunchTime)) {
+      invalidFields.push('Lunch');
+    }
+    if (!isValidTimeFormat(tempDinnerTime)) {
+      invalidFields.push('Dinner');
+    }
+
+    if (invalidFields.length > 0) {
+      Alert.alert(
+        'Invalid Time Format',
+        `Please enter valid times in HH:MM format for: ${invalidFields.join(', ')}\n\nExamples: 08:00, 13:30, 19:00`
+      );
+      return;
+    }
+
+    updateWellnessSettings({
+      meals: {
+        ...settings!.wellnessCheckIns.meals,
+        times: [tempBreakfastTime, tempLunchTime, tempDinnerTime],
+      },
+    });
+    setShowMealsDialog(false);
+    showSaveConfirmation('Meal times saved');
+  };
+
+  const saveTheme = () => {
+    updateSettings({ theme: tempTheme });
+    setShowThemeDialog(false);
+    showSaveConfirmation('Theme preference saved');
+  };
+
+  const openThemeDialog = () => {
+    setTempTheme(settings?.theme || 'auto');
+    setShowThemeDialog(true);
+  };
+
+  const getThemeLabel = (theme?: 'light' | 'dark' | 'auto') => {
+    switch (theme) {
+      case 'light':
+        return 'Light';
+      case 'dark':
+        return 'Dark';
+      case 'auto':
+      default:
+        return 'System Default';
+    }
   };
 
   if (!settings) return null;
@@ -442,6 +536,23 @@ export const SettingsScreen: React.FC = () => {
 
       <Divider style={styles.divider} />
 
+      {/* Appearance */}
+      <View style={styles.section}>
+        <Text variant="titleMedium" style={styles.sectionTitle}>
+          Appearance
+        </Text>
+
+        <List.Item
+          title="Theme"
+          description={getThemeLabel(settings.theme)}
+          left={(props) => <List.Icon {...props} icon="palette" />}
+          onPress={openThemeDialog}
+          right={(props) => <List.Icon {...props} icon="chevron-right" />}
+        />
+      </View>
+
+      <Divider style={styles.divider} />
+
       {/* Data Management */}
       <View style={styles.section}>
         <Text variant="titleMedium" style={styles.sectionTitle}>
@@ -500,6 +611,25 @@ export const SettingsScreen: React.FC = () => {
         </Button>
       </View>
 
+      <Divider style={styles.divider} />
+
+      {/* About */}
+      <View style={styles.section}>
+        <Text variant="titleMedium" style={styles.sectionTitle}>
+          About
+        </Text>
+        <List.Item
+          title="App Version"
+          description={Constants.expoConfig?.version || '1.0.0'}
+          left={(props) => <List.Icon {...props} icon="information" />}
+        />
+        <List.Item
+          title="ADHD Focus App"
+          description="Helping you stay focused and organized"
+          left={(props) => <List.Icon {...props} icon="heart" />}
+        />
+      </View>
+
       {/* Hydration Dialog */}
       <Portal>
         <Dialog visible={showHydrationDialog} onDismiss={() => setShowHydrationDialog(false)}>
@@ -541,20 +671,36 @@ export const SettingsScreen: React.FC = () => {
           <Dialog.Title>Meal Reminders</Dialog.Title>
           <Dialog.Content>
             <Text variant="bodyMedium" style={styles.dialogText}>
-              Current meal times:
+              Customize your meal reminder times:
             </Text>
-            {settings.wellnessCheckIns.meals.times.map((time, index) => (
-              <Text key={index} variant="bodyLarge" style={styles.mealTime}>
-                {index === 0 ? '🌅 Breakfast: ' : index === 1 ? '☀️ Lunch: ' : '🌙 Dinner: '}
-                {time}
-              </Text>
-            ))}
-            <Text variant="bodySmall" style={styles.dialogHint}>
-              Meal time customization coming soon!
-            </Text>
+            <TextInput
+              label="🌅 Breakfast Time (HH:MM)"
+              value={tempBreakfastTime}
+              onChangeText={setTempBreakfastTime}
+              placeholder="08:00"
+              mode="outlined"
+              style={styles.dialogInput}
+            />
+            <TextInput
+              label="☀️ Lunch Time (HH:MM)"
+              value={tempLunchTime}
+              onChangeText={setTempLunchTime}
+              placeholder="13:00"
+              mode="outlined"
+              style={styles.dialogInput}
+            />
+            <TextInput
+              label="🌙 Dinner Time (HH:MM)"
+              value={tempDinnerTime}
+              onChangeText={setTempDinnerTime}
+              placeholder="19:00"
+              mode="outlined"
+              style={styles.dialogInput}
+            />
           </Dialog.Content>
           <Dialog.Actions>
-            <Button onPress={() => setShowMealsDialog(false)}>Close</Button>
+            <Button onPress={() => setShowMealsDialog(false)}>Cancel</Button>
+            <Button onPress={saveMealTimes}>Save</Button>
           </Dialog.Actions>
         </Dialog>
 
@@ -627,6 +773,37 @@ export const SettingsScreen: React.FC = () => {
             <Button onPress={saveQuietHours}>Save</Button>
           </Dialog.Actions>
         </Dialog>
+
+        {/* Theme Dialog */}
+        <Dialog visible={showThemeDialog} onDismiss={() => setShowThemeDialog(false)}>
+          <Dialog.Title>Choose Theme</Dialog.Title>
+          <Dialog.Content>
+            <RadioButton.Group
+              onValueChange={(value) => setTempTheme(value as 'light' | 'dark' | 'auto')}
+              value={tempTheme}
+            >
+              <RadioButton.Item label="Light" value="light" />
+              <RadioButton.Item label="Dark" value="dark" />
+              <RadioButton.Item label="System Default" value="auto" />
+            </RadioButton.Group>
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button onPress={() => setShowThemeDialog(false)}>Cancel</Button>
+            <Button onPress={saveTheme}>Save</Button>
+          </Dialog.Actions>
+        </Dialog>
+
+        <Snackbar
+          visible={snackbarVisible}
+          onDismiss={() => setSnackbarVisible(false)}
+          duration={2000}
+          action={{
+            label: 'OK',
+            onPress: () => setSnackbarVisible(false),
+          }}
+        >
+          {snackbarMessage}
+        </Snackbar>
       </Portal>
 
       <View style={styles.bottomPadding} />
