@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ADHD Focus Quest - Time Management Game</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header with Stats -->
+        <header class="header">
+            <div class="logo">
+                <h1>🎯 Focus Quest</h1>
+                <p class="tagline">Level up your productivity!</p>
+            </div>
+            <div class="stats-bar">
+                <div class="stat">
+                    <span class="stat-label">Level</span>
+                    <span class="stat-value" id="level">1</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">XP</span>
+                    <span class="stat-value" id="xp">0</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">🔥 Streak</span>
+                    <span class="stat-value" id="streak">0</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">🏆 Points</span>
+                    <span class="stat-value" id="points">0</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- XP Progress Bar -->
+        <div class="xp-bar-container">
+            <div class="xp-bar" id="xpBar"></div>
+            <span class="xp-text" id="xpText">0 / 100 XP</span>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Timer Section -->
+            <section class="timer-section">
+                <h2>⏱️ Focus Timer</h2>
+                <div class="timer-display" id="timerDisplay">25:00</div>
+                <div class="timer-type" id="timerType">Focus Session</div>
+                <div class="timer-controls">
+                    <button class="btn btn-primary" id="startBtn">Start</button>
+                    <button class="btn btn-secondary" id="pauseBtn" disabled>Pause</button>
+                    <button class="btn btn-secondary" id="resetBtn">Reset</button>
+                </div>
+                <div class="timer-presets">
+                    <button class="preset-btn" data-minutes="25">25 min</button>
+                    <button class="preset-btn" data-minutes="15">15 min</button>
+                    <button class="preset-btn" data-minutes="5">5 min</button>
+                    <button class="preset-btn" data-minutes="1">1 min</button>
+                </div>
+            </section>
+
+            <!-- Tasks Section -->
+            <section class="tasks-section">
+                <h2>📋 Today's Quests</h2>
+                <div class="task-input-group">
+                    <input
+                        type="text"
+                        id="taskInput"
+                        placeholder="What's your next quest?"
+                        class="task-input"
+                    >
+                    <select id="taskPriority" class="priority-select">
+                        <option value="high">🔴 High</option>
+                        <option value="medium" selected>🟡 Medium</option>
+                        <option value="low">🟢 Low</option>
+                    </select>
+                    <button class="btn btn-add" id="addTaskBtn">Add Quest</button>
+                </div>
+                <div class="tasks-list" id="tasksList">
+                    <!-- Tasks will be added here dynamically -->
+                </div>
+            </section>
+        </div>
+
+        <!-- Achievements Panel -->
+        <section class="achievements-section">
+            <h2>🏆 Achievements</h2>
+            <div class="achievements-grid" id="achievementsGrid">
+                <!-- Achievements will be added here dynamically -->
+            </div>
+        </section>
+
+        <!-- Celebration Overlay -->
+        <div class="celebration-overlay" id="celebrationOverlay">
+            <div class="celebration-content">
+                <div class="celebration-emoji" id="celebrationEmoji">🎉</div>
+                <div class="celebration-message" id="celebrationMessage"></div>
+                <div class="celebration-points" id="celebrationPoints"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Audio Elements -->
+    <audio id="completeSound" preload="auto">
+        <source src="data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1+/IdCkFJHfH8N2QQAoUXrTp6qJcFQt2sPT0giwHJHfH8N2QQAoUXrTp6qJcFQt2sPT0giwHJHfH8N2QQAoUXrTp6qJcFQt2sPT0giwHJHfH8N2QQAoUXrTp6qJcFQt2sPT0giwHJHfH8N2QQAoUXrTp6qJcFQt2sPT0giwHJHfH8N2QQAoUXrTp6qJcFQt2sPT0giwHJHfH8N2QQAoUXrTp6qJcFQt2sPT0giwHJHfH8N2QQAoUXrTp6qJcFQ==" type="audio/wav">
+    </audio>
+    <audio id="levelUpSound" preload="auto">
+        <source src="data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1+/IdCkFJHfH8N2QQAoUXrTp6qJcFQt2sPT0giwHJHfH8N2QQAoUXrTp6qJcFQt2sPT0giwHJHfH8N2QQAoUXrTp6qJcFQt2sPT0giwHJHfH8N2QQAoUXrTp6qJcFQt2sPT0giwHJHfH8N2QQAoUXrTp6qJcFQt2sPT0giwHJHfH8N2QQAoUXrTp6qJcFQt2sPT0giwHJHfH8N2QQAoUXrTp6qJcFQt2sPT0giwHJHfH8N2QQAoUXrTp6qJcFQ==" type="audio/wav">
+    </audio>
+
+    <script src="app.js"></script>
+</body>
+</html>
